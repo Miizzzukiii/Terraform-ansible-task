@@ -8,7 +8,7 @@ resource "vcd_vapp" "vapp_InfraDev_PostgreSQL" {
 
 # Создание сети в vApp для БД
 resource "vcd_vapp_org_network" "PostgreSQL-routed-network" {
-  vapp_name         = vcd_vapp.vapp_InfraDev_PostgreSQL.name
+  vapp_name         = vcd_vapp.vapp_InfraDev_postgresql.name
   org_network_name  = module.network.Net.name
 }
 
@@ -26,12 +26,16 @@ resource "vcd_vm_internal_disk" "postgresql-inf-d-01-disk1" {
 
 # Создание VM для PostgreSQL
 resource "vcd_vapp_vm" "vm_postgresql" {
-  vapp_name     = vcd_vapp.vapp_postgresql.name
-  name          = "postgresql-vm"
-  memory        = 4096
-  cpus          = 2
+  vapp_name     = vcd_vapp.vapp_InfraDev_postgresql.name
+  name          = "postgresql-inf-d-01"
+  computer_name = "postgresql-inf-d-01"
   catalog_name  = var.vcd_org_catalog
-  template_name = var.template_vm
+  template_name = var.template_vm #?
+  memory        = 2048
+  cpus          = 2
+  cpu_cores     = 1
+
+  depends_on = [module.network.Net, vcd_vapp.vapp_InfraDev_postgresql]
 
   network {
     type               = "org"
@@ -47,7 +51,6 @@ resource "vcd_vapp_vm" "vm_postgresql" {
     admin_password             = var.admin_password
   }
 
-  depends_on = [vcd_vapp.vapp_postgresql]
 }
 
 
