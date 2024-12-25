@@ -24,3 +24,30 @@ resource "vcd_vm_internal_disk" "postgresql-inf-d-01-disk1" {
   depends_on = [vcd_vapp_vm.postgresql-inf-d-01]
 }
 
+# Создание VM для PostgreSQL
+resource "vcd_vapp_vm" "vm_postgresql" {
+  vapp_name     = vcd_vapp.vapp_postgresql.name
+  name          = "postgresql-vm"
+  memory        = 4096
+  cpus          = 2
+  catalog_name  = var.vcd_org_catalog
+  template_name = var.template_vm
+
+  network {
+    type               = "org"
+    name               = var.network_name
+    ip                 = var.postgresql_ip
+    ip_allocation_mode = "MANUAL"
+  }
+
+  customization {
+    enabled                    = true
+    allow_local_admin_password = true
+    auto_generate_password     = false
+    admin_password             = var.admin_password
+  }
+
+  depends_on = [vcd_vapp.vapp_postgresql]
+}
+
+
