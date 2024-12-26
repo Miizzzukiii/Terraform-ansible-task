@@ -119,7 +119,6 @@ EOT
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update && sudo apt-get upgrade -y",
-      "sudo apt-get install -y python3 python3-pip ansible",
       
       # Установка зависимостей из requirements.txt
       "pip3 install -r /tmp/requirements.txt",
