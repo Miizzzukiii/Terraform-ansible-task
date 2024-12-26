@@ -89,33 +89,9 @@ sudo systemctl restart gitlab-runner
 EOT
   }
 
-  # Provisioner для выполнения скриптов после деплоя
-  provisioner "remote-exec" {
-    inline = [
-      # Обновление системы
-      "sudo apt-get update && sudo apt-get upgrade -y",
-
-      # Установка Python, pip и Ansible
-      "sudo apt-get install -y python3 python3-pip ansible",
-
-      # Установка зависимостей из requirements.txt
-      "pip3 install -r /tmp/requirements.txt",
-
-      # Запуск роли Ansible
-      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/site.yml"
-    ]
-
-    connection {
-      type        = "ssh"
-      host        = self.network[0].ip
-      user        = var.ssh_user
-      private_key = file(var.ssh_private_key)
-    }
-  }
-
-  # Передача файла requirements.txt
+  # Передача файла requirements.txt с треьованиями по зависимостям (python, python3-pip, ansible)
   provisioner "file" {
-    source      = "devops/infrastructure/requirements.txt"
+    source      = "devops/???/requirements.txt"
     destination = "/tmp/requirements.txt"
 
     connection {
@@ -126,10 +102,31 @@ EOT
     }
   }
 
-  # Передача папки с ролью Ansible
+  # Передача папки с ролями Ansible
   provisioner "file" {
     source      = "devops/infrastructure/roles/postgresql"
     destination = "/tmp/roles/postgresql"
+
+    connection {
+      type        = "ssh"
+      host        = self.network[0].ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_private_key)
+    }
+  }
+
+  # Выполнение команд на целевой машине
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update && sudo apt-get upgrade -y",
+      "sudo apt-get install -y python3 python3-pip ansible",
+      
+      # Установка зависимостей из requirements.txt
+      "pip3 install -r /tmp/requirements.txt",
+
+      # Запуск плейбука Ansible
+      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/site.yml"
+    ]
 
     connection {
       type        = "ssh"
