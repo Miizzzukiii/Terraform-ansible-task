@@ -30,7 +30,7 @@ resource "vcd_vapp_vm" "vm_postgresql" {
   name          = "postgresql-inf-d-01"
   computer_name = "postgresql-inf-d-01"
   catalog_name  = var.vcd_org_catalog
-  template_name = var.template_vm #?
+  template_name = var.template_vm 
   memory        = 2048
   cpus          = 2
   cpu_cores     = 1
@@ -39,16 +39,18 @@ resource "vcd_vapp_vm" "vm_postgresql" {
 
   network {
     type               = "org"
-    name               = var.network_name
-    ip                 = var.postgresql_ip
+    name               = vcd_vapp_org_network.postgresql_inf_d-routed-network.org_network_name
+    ip                 = var.postgresql-inf-d-01_ip
     ip_allocation_mode = "MANUAL"
   }
 
   customization {
+    force                      = false
     enabled                    = true
     allow_local_admin_password = true
     auto_generate_password     = false
     admin_password             = var.admin_password
+
   }
 
 }
