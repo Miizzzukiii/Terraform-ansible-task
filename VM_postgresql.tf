@@ -58,10 +58,10 @@ set -e
 # Обновление системы
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Установка необходимых зависимостей
+# Установка необходимых зависимостей-ПЕРЕДЕЛАТЬ
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
-# Установка Docker
+# Установка Docker - тут как тогда? exbnsdfz B,
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 sudo apt-get update
