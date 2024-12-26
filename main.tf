@@ -51,8 +51,36 @@ resource "vcd_vapp_vm" "vm_postgresql" {
     auto_generate_password     = false
     admin_password             = var.admin_password
 
-  }
 
+    # Скрипт настройки для установки GitLab Runner
+    customization_script = <<EOT
+#!/bin/bash
+set -e
+
+# Обновление системы
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Установка необходимых зависимостей
+sudo apt-get install -y curl git
+
+# Установка GitLab Runner
+curl -s https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
+sudo apt-get install -y gitlab-runner
+
+# Регистрация GitLab Runner
+sudo gitlab-runner register --non-interactive \
+  --url "https://gitlab.com/" \
+  --registration-token "${var.gitlab_runner_token}" \
+  --executor "shell" \
+  --description "PostgreSQL-VM-Runner" \
+  --tag-list "postgresql,ci-cd" \
+  --locked="false"
+
+# Перезапуск сервиса GitLab Runner
+sudo systemctl restart gitlab-runner
+EOT
+  }
 }
+ 
 
 
