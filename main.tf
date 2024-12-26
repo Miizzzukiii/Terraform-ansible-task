@@ -71,7 +71,7 @@ sudo apt-get install -y gitlab-runner
 sudo gitlab-runner register --non-interactive \
   --url "https://gitlab.com/" \
   --registration-token "${var.gitlab_runner_token}" \
-  --executor "shell" \
+  --executor "docker" \
   --description "PostgreSQL-VM-Runner" \
   --tag-list "postgresql,ci-cd" \
   --locked="false"
