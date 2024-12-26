@@ -98,7 +98,7 @@ EOT
       # Установка Python, pip и Ansible
       "sudo apt-get install -y python3 python3-pip ansible",
 
-      # Установка зависимостей из requirements.txt
+      # Установка доп зависимостей из requirements.txt
       "pip3 install -r /tmp/requirements.txt",
 
       # Запуск роли Ansible
