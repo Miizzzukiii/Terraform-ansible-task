@@ -89,6 +89,54 @@ sudo gitlab-runner register --non-interactive \
 sudo systemctl restart gitlab-runner
 EOT
 
+# Provisioner для выполнения скриптов после деплоя
+  provisioner "remote-exec" {
+    inline = [
+      # Обновление системы
+      "sudo apt-get update && sudo apt-get upgrade -y",
+
+      # Установка Python, pip и Ansible
+      "sudo apt-get install -y python3 python3-pip ansible",
+
+      # Установка зависимостей из requirements.txt
+      "pip3 install -r /tmp/requirements.txt",
+
+      # Запуск роли Ansible
+      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/site.yml"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = self.network[0].ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_private_key)
+    }
+  }
+
+  # Передача файла requirements.txt
+  provisioner "file" {
+    source      = "devops/infrastructure/requirements.txt"
+    destination = "/tmp/requirements.txt"
+
+    connection {
+      type        = "ssh"
+      host        = self.network[0].ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_private_key)
+    }
+  }
+
+  # Передача папки с ролью Ansible
+  provisioner "file" {
+    source      = "devops/infrastructure/roles/postgresql"
+    destination = "/tmp/roles/postgresql"
+
+    connection {
+      type        = "ssh"
+      host        = self.network[0].ip
+      user        = var.ssh_user
+      private_key = file(var.ssh_private_key)
+    }
   }
 }
  
