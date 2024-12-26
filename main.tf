@@ -52,7 +52,6 @@ resource "vcd_vapp_vm" "vm_postgresql" {
     admin_password             = var.admin_password
 
 
-    # Скрипт настройки для установки GitLab Runner
     customization_script = <<EOT
 #!/bin/bash
 set -e
@@ -61,17 +60,27 @@ set -e
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Установка необходимых зависимостей
-sudo apt-get install -y curl git
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
+
+# Установка Docker
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce
+
+# Добавление пользователя GitLab Runner в группу Docker
+sudo usermod -aG docker gitlab-runner
 
 # Установка GitLab Runner
 curl -s https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
 sudo apt-get install -y gitlab-runner
 
-# Регистрация GitLab Runner
+# Регистрация GitLab Runner с Docker executor
 sudo gitlab-runner register --non-interactive \
   --url "https://gitlab.com/" \
   --registration-token "${var.gitlab_runner_token}" \
   --executor "docker" \
+  --docker-image "docker:latest" \
   --description "PostgreSQL-VM-Runner" \
   --tag-list "postgresql,ci-cd" \
   --locked="false"
@@ -79,6 +88,7 @@ sudo gitlab-runner register --non-interactive \
 # Перезапуск сервиса GitLab Runner
 sudo systemctl restart gitlab-runner
 EOT
+
   }
 }
  
