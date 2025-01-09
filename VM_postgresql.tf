@@ -35,6 +35,14 @@ resource "vcd_vapp_vm" "vm_postgresql" {
   cpus          = 2
   cpu_cores     = 1
 
+   metadata = {
+    managed = "terraform"
+  }
+
+  guest_properties = {
+    "user-data"           = base64encode(file("./meta.yml"))
+  }
+
   depends_on = [module.network.Net, vcd_vapp.vapp_InfraDev_PostgreSQL]
 
   network {
