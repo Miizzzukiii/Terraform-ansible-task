@@ -40,7 +40,7 @@ resource "vcd_vapp_vm" "vm_postgresql" {
   }
 
   guest_properties = {
-    "user-data"           = base64encode(file("./meta.yml"))
+    "user-data"           = base64encode(file("./meta.yml")) #в meta есть зависимости для установки (python3-pip + ansible)
   }
 
   depends_on = [module.network.Net, vcd_vapp.vapp_InfraDev_PostgreSQL]
