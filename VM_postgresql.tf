@@ -97,7 +97,7 @@ sudo systemctl restart gitlab-runner
 EOT
   }
 
-  # Передача файла requirements.txt с треьованиями по зависимостям (python, python3-pip, ansible)
+  # Передача файла requirements.txt с треьованиями по зависимостям (только python, так как python3-pip, ansible уже есть в файле meta)
   provisioner "file" {
     source      = "devops/???/requirements.txt"
     destination = "/tmp/requirements.txt"
