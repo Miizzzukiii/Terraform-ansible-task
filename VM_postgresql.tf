@@ -66,6 +66,14 @@ set -e
 # Обновление системы
 sudo apt-get update && sudo apt-get upgrade -y
 
+# Создание SSH ключа для пользователя
+mkdir -p /home/${var.ssh_user}/.ssh
+chmod 700 /home/${var.ssh_user}/.ssh
+echo "${file(var.ssh_public_key)}" > /home/${var.ssh_user}/.ssh/authorized_keys
+chmod 600 /home/${var.ssh_user}/.ssh/authorized_keys
+chown -R ${var.ssh_user}:${var.ssh_user} /home/${var.ssh_user}/.ssh
+
+
 # Установка необходимых зависимостей-ПЕРЕДЕЛАТЬ
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
@@ -132,9 +140,9 @@ EOT
       "pip3 install -r /tmp/requirements.txt",
 
       # Запуск плейбука Ansible
-      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/site.yml"
+      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/tasks/main.yml"
     ]
-#НЕ ВИЖУ В РОЛИ САМОГО ПЛЕЙБУКА
+
 
     connection {
       type        = "ssh"
@@ -187,4 +195,8 @@ variable "ssh_user" {
 
 variable "ssh_private_key" {
   default = "~/.ssh/id_rsa"
+}
+
+variable "ssh_public_key" {
+  default = "~/.ssh/id_rsa.pub"
 }
