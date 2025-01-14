@@ -1,6 +1,6 @@
 terraform {
   backend "local" {
-    path = "/home/${var.ssh_user}/terraform.tfstate"
+    path = "/home/${var.ssh_user}/postgresql_vm.tfstate"
   }
 } #ТАК НЕЛЬЗЯ-ОШИБКА-ТАК КАК ВМ ЕЩЕ НЕ СОЗДАНА - где тогда лучше мне пока хранить стейт?
 
