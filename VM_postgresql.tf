@@ -66,12 +66,18 @@ set -e #завершение при любой ошибке
 # Обновление системы
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Создание SSH ключа для пользователя
+# Настройка SSH-ключей на целевой ВМ
 mkdir -p /home/${var.ssh_user}/.ssh
 chmod 700 /home/${var.ssh_user}/.ssh
-echo "${file(var.ssh_public_key)}" > /home/${var.ssh_user}/.ssh/authorized_keys
+
+# Добавление публичного ключа в authorized_keys
+echo "${var.ssh_public_key}" > /home/${var.ssh_user}/.ssh/authorized_keys
 chmod 600 /home/${var.ssh_user}/.ssh/authorized_keys
+
+# Установка владельца файлов
 chown -R ${var.ssh_user}:${var.ssh_user} /home/${var.ssh_user}/.ssh
+
+echo "Публичный ключ настроен для пользователя ${var.ssh_user}."
 
 
 # Установка необходимых зависимостей
@@ -105,7 +111,8 @@ sudo systemctl restart gitlab-runner
 EOT
   }
 
-  # Передача файла requirements.txt с требованиями по зависимостям (только python, так как python3-pip, ansible уже есть в файле meta)
+  # Передача файла requirements.txt с требованиями по зависимостям (только python, так как python3-pip, ansible 
+  # уже есть в файле meta)
   provisioner "file" {
     source      = "devops/???/requirements.txt"
     destination = "/tmp/requirements.txt"
@@ -194,9 +201,6 @@ variable "ssh_user" {
   default = "ubuntu"
 }
 
-variable "ssh_private_key" {
-  default = "~/.ssh/id_rsa"
-}
 
 variable "ssh_public_key" {
   default = "~/.ssh/id_rsa.pub"
