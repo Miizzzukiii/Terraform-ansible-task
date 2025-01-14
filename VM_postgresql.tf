@@ -134,6 +134,7 @@ EOT
       # Запуск плейбука Ansible
       "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/site.yml"
     ]
+#НЕ ВИЖУ В РОЛИ САМОГО ПЛЕЙБУКА
 
     connection {
       type        = "ssh"
