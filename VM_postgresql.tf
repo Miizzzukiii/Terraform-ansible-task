@@ -146,5 +146,5 @@ variable "storage_profile" {
 }
 
 variable "admin_password" {
-  default = "StrongPassword123"
+  default = "StrongPassword123" #сделать через гитлаб ENV
 }
