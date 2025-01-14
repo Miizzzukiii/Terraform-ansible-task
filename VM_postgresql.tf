@@ -1,3 +1,9 @@
+terraform {
+  backend "local" {
+    path = "/home/${var.ssh_user}/terraform.tfstate"
+  }
+} #ТАК НЕЛЬЗЯ-ОШИБКА-ТАК КАК ВМ ЕЩЕ НЕ СОЗДАНА - где тогда лучше мне пока хранить стейт?
+
 # Создание vApp для БД
 resource "vcd_vapp" "vapp_InfraDev_PostgreSQL" {
   name    = "vapp-InfraDev-PostgreSQL"
