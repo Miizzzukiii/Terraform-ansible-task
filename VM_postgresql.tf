@@ -65,56 +65,6 @@ resource "vcd_vapp_vm" "vm_postgresql" {
     auto_generate_password     = false
     admin_password             = var.admin_password
 
-    customization_script = <<EOT
-#!/bin/bash
-set -e #завершение при любой ошибке 
-
-# Обновление системы
-sudo apt-get update && sudo apt-get upgrade -y
-
-# Настройка SSH-ключей на целевой ВМ
-mkdir -p /home/${var.ssh_user}/.ssh
-chmod 700 /home/${var.ssh_user}/.ssh
-
-# Добавление публичного ключа в authorized_keys
-echo "${var.ssh_public_key}" > /home/${var.ssh_user}/.ssh/authorized_keys
-chmod 600 /home/${var.ssh_user}/.ssh/authorized_keys
-
-# Установка владельца файлов
-chown -R ${var.ssh_user}:${var.ssh_user} /home/${var.ssh_user}/.ssh
-
-echo "Публичный ключ настроен для пользователя ${var.ssh_user}."
-
-
-# Установка необходимых зависимостей
-sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
-
-# Установка Docker - тут как тогда? 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update
-sudo apt-get install -y docker-ce
-
-# Добавление пользователя GitLab Runner в группу Docker
-sudo usermod -aG docker gitlab-runner
-
-# Установка GitLab Runner
-curl -s https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | sudo bash
-sudo apt-get install -y gitlab-runner
-
-# Регистрация GitLab Runner с Docker executor
-sudo gitlab-runner register --non-interactive \
-  --url "https://gitlab.exportcenter.ru" \
-  --registration-token "${var.gitlab_runner_token}" \
-  --executor "docker" \
-  --docker-image "docker:27.4.1" \
-  --description "PostgreSQL-VM-Runner" \
-  --tag-list "postgresql,ci-cd" \
-  --locked="false"
-
-# Перезапуск сервиса GitLab Runner
-sudo systemctl restart gitlab-runner
-EOT
   }
 
   # Передача файла requirements.txt с требованиями по зависимостям (только python, так как python3-pip, ansible 
@@ -197,16 +147,4 @@ variable "storage_profile" {
 
 variable "admin_password" {
   default = "StrongPassword123"
-}
-
-variable "gitlab_runner_token" {
-  default = "GITLAB_RUNNER_REGISTRATION_TOKEN" #вставить потом -ЖЕЛАТЕЛЬНО ЧЕРЕЗ ГИТЛАБ env среды
-}
-
-variable "ssh_user" {
-  default = "ubuntu"
-}
-
-variable "ssh_public_key" {
-  default = "~/.ssh/id_rsa.pub"
 }
