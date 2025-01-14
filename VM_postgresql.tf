@@ -187,7 +187,7 @@ variable "admin_password" {
 }
 
 variable "gitlab_runner_token" {
-  default = "GITLAB_RUNNER_REGISTRATION_TOKEN" #вставить потом 
+  default = "GITLAB_RUNNER_REGISTRATION_TOKEN" #вставить потом -ЖЕЛАТЕЛЬНО ЧЕРЕЗ ГИТЛАБ env среды
 }
 
 variable "ssh_user" {
