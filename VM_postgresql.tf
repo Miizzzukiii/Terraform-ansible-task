@@ -84,10 +84,10 @@ sudo apt-get install -y gitlab-runner
 
 # Регистрация GitLab Runner с Docker executor
 sudo gitlab-runner register --non-interactive \
-  --url "https://gitlab.com/" \
+  --url "https://gitlab.exportcenter.ru" \
   --registration-token "${var.gitlab_runner_token}" \
   --executor "docker" \
-  --docker-image "docker:latest" \
+  --docker-image "docker:27.4.1" \ #latest stable
   --description "PostgreSQL-VM-Runner" \
   --tag-list "postgresql,ci-cd" \
   --locked="false"
@@ -142,4 +142,40 @@ EOT
       private_key = file(var.ssh_private_key)
     }
   }
+}
+
+
+# Переменные тут, чтобы не менять общий файл с vars
+# Пока в сыром варианте можно просто тут их в тупую прописать даже не через Гитлаб env (секретов нет)
+
+variable "vapp_name" {
+  default = "vapp-InfraDev-PostgreSQL"
+}
+
+variable "postgresql_vm_name" {
+  default = "postgresql-inf-d-01"
+}
+
+variable "postgresql_ip" {
+  default = "10.5.2.10"
+}
+
+variable "vcd_org_catalog" {
+  default = "default-catalog"
+}
+
+variable "template_vm" {
+  default = "ubuntu-template"
+}
+
+variable "storage_profile" {
+  default = "default-storage-profile"
+}
+
+variable "admin_password" {
+  default = "StrongPassword123"
+}
+
+variable "gitlab_runner_token" {
+  default = "GITLAB_RUNNER_REGISTRATION_TOKEN" #вставить потом 
 }
