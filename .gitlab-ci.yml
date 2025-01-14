@@ -1,0 +1,24 @@
+stages:
+  - init
+  - deploy
+
+# Работа с Terraform Workspaces
+init_terraform_workspace:
+  stage: init
+  script:
+    # Проверяем, существует ли workspace, если нет — создаем его
+    - terraform workspace list | grep postgre_vm || terraform workspace new postgresql_vm
+    - terraform workspace select postgresql_vm
+  artifacts:
+    paths:
+      - postgresql_vm.tfstate
+
+deploy_infrastructure:
+  stage: deploy
+  script:
+    - echo "Workspace postgre_vm is ready for deployment"
+  trigger:
+    project: devops/terraform/vm
+    branch: $CI_COMMIT_REF_NAME
+    strategy: depend
+
