@@ -1,8 +1,8 @@
 terraform {
   backend "local" {
-    path = "/home/${var.ssh_user}/postgresql_vm.tfstate"
+    path = "terraform_postgresql_vm.tfstate" # локально- это где и раннер?
   }
-} #ТАК НЕЛЬЗЯ-ОШИБКА-ТАК КАК ВМ ЕЩЕ НЕ СОЗДАНА - где тогда лучше мне пока хранить стейт?
+}
 
 # Создание vApp для БД
 resource "vcd_vapp" "vapp_InfraDev_PostgreSQL" {
@@ -72,8 +72,8 @@ resource "vcd_vapp_vm" "vm_postgresql" {
   provisioner "file" {
     source      = "devops/???/requirements.txt"
     destination = "/tmp/requirements.txt"
-#какой смысл тогда делать этот файл если это только питон, можно и через скрипт 
-#можно пихнуть установку питона при создании вм
+#может тогда не использовать это  если нам дополнительно нужен только питон, можно и через скрипт 
+#можно тогда просто в remote-exec provisioner дописать
     connection {
       type        = "ssh"
       host        = self.network[0].ip
