@@ -87,7 +87,7 @@ sudo gitlab-runner register --non-interactive \
   --url "https://gitlab.exportcenter.ru" \
   --registration-token "${var.gitlab_runner_token}" \
   --executor "docker" \
-  --docker-image "docker:27.4.1" \ #latest stable
+  --docker-image "docker:27.4.1" \
   --description "PostgreSQL-VM-Runner" \
   --tag-list "postgresql,ci-cd" \
   --locked="false"
@@ -178,4 +178,12 @@ variable "admin_password" {
 
 variable "gitlab_runner_token" {
   default = "GITLAB_RUNNER_REGISTRATION_TOKEN" #вставить потом 
+}
+
+variable "ssh_user" {
+  default = "ubuntu"
+}
+
+variable "ssh_private_key" {
+  default = "~/.ssh/id_rsa"
 }
