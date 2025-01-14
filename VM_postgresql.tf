@@ -61,7 +61,7 @@ resource "vcd_vapp_vm" "vm_postgresql" {
 
     customization_script = <<EOT
 #!/bin/bash
-set -e
+set -e #завершение при любой ошибке 
 
 # Обновление системы
 sudo apt-get update && sudo apt-get upgrade -y
@@ -74,7 +74,7 @@ chmod 600 /home/${var.ssh_user}/.ssh/authorized_keys
 chown -R ${var.ssh_user}:${var.ssh_user} /home/${var.ssh_user}/.ssh
 
 
-# Установка необходимых зависимостей-ПЕРЕДЕЛАТЬ
+# Установка необходимых зависимостей
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
 # Установка Docker - тут как тогда? 
@@ -105,11 +105,12 @@ sudo systemctl restart gitlab-runner
 EOT
   }
 
-  # Передача файла requirements.txt с треьованиями по зависимостям (только python, так как python3-pip, ansible уже есть в файле meta)
+  # Передача файла requirements.txt с требованиями по зависимостям (только python, так как python3-pip, ansible уже есть в файле meta)
   provisioner "file" {
     source      = "devops/???/requirements.txt"
     destination = "/tmp/requirements.txt"
-
+#какой смысл тогда делать этот файл если это только питон, можно и через скрипт 
+#можно пихнуть установку питона при создании вм
     connection {
       type        = "ssh"
       host        = self.network[0].ip
