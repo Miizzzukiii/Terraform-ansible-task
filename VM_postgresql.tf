@@ -1,6 +1,6 @@
 terraform {
   backend "local" {
-    path = "terraform_postgresql_vm.tfstate" # локально- это где и раннер?
+    path = "./terraform_postgresql_vm.tfstate"
   }
 }
 
@@ -44,6 +44,8 @@ resource "vcd_vapp_vm" "vm_postgresql" {
    metadata = {
     managed = "terraform"
   }
+
+# Указываем Cloud-Init конфигурацию
 
   guest_properties = {
     "user-data"           = base64encode(file("./meta.yml")) #в meta есть зависимости для установки (python3-pip + ansible)
@@ -96,7 +98,7 @@ resource "vcd_vapp_vm" "vm_postgresql" {
   }
 
   # Выполнение команд на целевой машине
-  provisioner "remote-exec" {
+  provisioner "local-exec" {
     inline = [
       "sudo apt-get update && sudo apt-get upgrade -y",
       
