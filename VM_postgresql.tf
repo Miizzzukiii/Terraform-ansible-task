@@ -1,8 +1,3 @@
-terraform {
-  backend "local" {
-    path = "./terraform_postgresql_vm.tfstate"
-  }
-}
 
 # Создание vApp для БД
 resource "vcd_vapp" "vapp_InfraDev_PostgreSQL" {
@@ -45,11 +40,12 @@ resource "vcd_vapp_vm" "vm_postgresql" {
     managed = "terraform"
   }
 
-# Указываем Cloud-Init конфигурацию
+#  Считываем основную Cloud-Init конфигурацию (cloud-config)
 
-  guest_properties = {
-    "user-data"           = base64encode(file("./meta.yml")) #в meta есть зависимости для установки (python3-pip + ansible)
-  }
+ locals {
+  base_meta = file("${path.module}/devops/terraform/vm/Env_InfraDev/meta.yml")
+}
+
 
   depends_on = [module.network.Net, vcd_vapp.vapp_InfraDev_PostgreSQL]
 
