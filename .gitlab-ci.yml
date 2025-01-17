@@ -1,24 +1,69 @@
 stages:
-  - init
-  - deploy
+  - prepare-cloud-config
+  - plan
+  - apply
 
-# Работа с Terraform Workspaces
-init_terraform_workspace:
-  stage: init
+# Генерация кастомного Cloud-Init конфигурационного файла
+prepare-cloud-config:
+  stage: prepare-cloud-config
   script:
-    # Проверяем, существует ли workspace, если нет — создаем его
-    - terraform workspace list | grep postgre_vm || terraform workspace new postgresql_vm
-    - terraform workspace select postgresql_vm
+    # Генерируем cloud-config динамически и сохраняем в переменной TF_VAR_cloud_config
+    - echo "Генерация кастомного cloud-config"
+    - export CUSTOM_CLOUD_CONFIG=$(cat <<EOF
+#cloud-config
+preserve_hostname: true
+timezone: Europe/Moscow
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+packages:
+  - git
+  - python3-pip
+  - ansible
+users:
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: false
+EOF
+    )
+    # Передаём cloud-config в качестве переменной Terraform
+    - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
+    - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
   artifacts:
     paths:
-      - postgresql_vm.tfstate
+      - cloud-config-preview.yml  # Для отладки сохраняем сгенерированный файл
 
-deploy_infrastructure:
-  stage: deploy
+# Проверка изменений с учетом условий
+plan:
+  stage: plan
   script:
-    - echo "Workspace postgre_vm is ready for deployment"
-  trigger:
-    project: devops/terraform/vm
-    branch: $CI_COMMIT_REF_NAME
-    strategy: depend
+    - echo "Планирование изменений Terraform..."
+    # Выполняем terraform plan с передачей кастомного cloud-config
+    - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
+
+    # Анализируем план для проверки количества изменений и наличия удалений
+    - export DESTROY_COUNT=$(grep -c "Destroying" plan_output.log)
+    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ to add|change" plan_output.log | awk '{print $2}')
+    - echo "Ресурсов на удаление: $DESTROY_COUNT"
+    - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
+
+    # Условие: отменяем, если есть удаления или слишком много изменений
+    - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
+    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
+
+  artifacts:
+    paths:
+      - tfplan       # Сохраняем план для использования в следующем этапе
+      - plan_output.log  # Лог плана для отладки
+
+# Применение изменений, если они были одобрены
+apply:
+  stage: apply
+  script:
+    - echo "Применение изменений Terraform..."
+    - terraform apply -auto-approve tfplan
+
+
 
