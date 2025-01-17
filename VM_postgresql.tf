@@ -47,8 +47,7 @@ resource "vcd_vapp_vm" "postgresql-inf-d-01" {
   network {
     type               = "org"
     name               = vcd_vapp_org_network.PostgreSQL-routed-network.org_network_name
-    ip                 = var.postgresql_inf_d_01_ip
-    ip_allocation_mode = "MANUAL"
+    ip_allocation_mode = "pool"  # Автоматическое распределение IP из пула
   }
 
   customization {
@@ -74,7 +73,7 @@ resource "vcd_vapp_vm" "postgresql-inf-d-01" {
   provisioner "local-exec" {
     inline = [
       "sudo apt-get update && sudo apt-get upgrade -y",
-      "ansible-playbook -i 'localhost,' -c local /tmp/roles/postgresql/tasks/main.yml"
+        "ansible-playbook -i ${self.network[0].ip}, -l cloud_InfraDev -t postgresql_role /tmp/roles/postgresql/tasks/main.yml"
     ]
   }
 }
@@ -87,10 +86,6 @@ variable "cloud_config" {
 
 variable "vapp_name" {
   default = "vapp-InfraDev-PostgreSQL"
-}
-
-variable "postgresql_inf_d_01_ip" {
-  default = "10.5.2.10"
 }
 
 variable "vcd_org_catalog" {
