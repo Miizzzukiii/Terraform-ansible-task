@@ -58,10 +58,6 @@ resource "vcd_vapp_vm" "postgresql-inf-d-01" {
     admin_password             = var.admin_password
   }
 
-  # Считываем основной клауд-конфиг который мы дополнили 
-  locals {
-    base_meta = file("${path.module}/devops/terraform/vm/Env_InfraDev/meta.yml")
-  }
 
   # Импортирование роли Ansible
   provisioner "file" {
