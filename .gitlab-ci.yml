@@ -66,8 +66,7 @@ apply:
   script:
     - echo "Применение изменений Terraform..."
     - terraform apply -auto-approve tfplan
-
-  when: manual  # Ручное подтверждение, если план прошел
+  when: manual  # Ручное подтверждение, если план прошел !!!!!!!
 
 # Очистка артефактов после выполнения этапов
 cleanup:
