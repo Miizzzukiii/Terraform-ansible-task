@@ -2,12 +2,12 @@ stages:
   - prepare-cloud-config
   - plan
   - apply
+  - cleanup
 
 # Генерация кастомного Cloud-Init конфигурационного файла
 prepare-cloud-config:
   stage: prepare-cloud-config
   script:
-    # Генерируем cloud-config динамически и сохраняем в переменной TF_VAR_cloud_config
     - echo "Генерация кастомного cloud-config"
     - export CUSTOM_CLOUD_CONFIG=$(cat <<EOF
 #cloud-config
@@ -57,13 +57,26 @@ plan:
     paths:
       - tfplan       # Сохраняем план для использования в следующем этапе
       - plan_output.log  # Лог плана для отладки
-
+  when: manual  # Требует ручного подтверждения
+  allow_failure: false
+  
 # Применение изменений, если они были одобрены
 apply:
   stage: apply
   script:
     - echo "Применение изменений Terraform..."
     - terraform apply -auto-approve tfplan
+
+  when: manual  # Ручное подтверждение, если план прошел
+
+# Очистка артефактов после выполнения этапов
+cleanup:
+  stage: cleanup
+  script:
+    - echo "Очистка артефактов..."
+    - rm -f tfplan cloud-config-preview.yml plan_output.log
+  when: always  # Этот этап всегда выполняется, даже если план или apply завершаются с ошибкой
+  allow_failure: true  # Этот этап не влияет на пайплайн, если возникнут ошибки во время очистки
 
 
 
