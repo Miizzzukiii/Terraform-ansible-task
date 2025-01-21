@@ -5,7 +5,7 @@ variables:
 
 include:
   # Указываем основной пайплайн
-  - local: '/devops/terraform/vm/.gitlab-ci.yml' 
+  - local: '/devops/terraform/vm/.gitlab-ci.yml'
 
 stages:
   - prepare-cloud-config
@@ -44,6 +44,8 @@ EOF
     paths:
       - cloud-config-preview.yml
     expose_as: "Custom Cloud-Config"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
 
 # Расширяем стадию plan
 plan:
@@ -65,16 +67,20 @@ plan:
     paths:
       - plan_output.log
       - tfplan
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
 
 apply:
-  extends: .apply_Env_InfraDev # аналогично задача из основного пайплайна
+  extends: .apply_Env_InfraDev  # аналогично задача из основного пайплайна
   stage: apply
   script:
     - echo "Применение изменений для PostgreSQL..."
     - terraform apply -auto-approve tfplan
   dependencies:
     - plan
-  when: never 
+  when: never
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
 
 # Очистка артефактов после выполнения этапов
 cleanup:
@@ -84,3 +90,6 @@ cleanup:
     - rm -f tfplan cloud-config-preview.yml plan_output.log
   when: always  # Этот этап всегда выполняется, даже если план или apply завершаются с ошибкой
   allow_failure: true  # Этот этап не влияет на пайплайн, если возникнут ошибки во время очистки
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+
