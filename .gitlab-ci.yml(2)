@@ -3,6 +3,10 @@ variables:
   CI_ARTIFACTORY_USER: $CI_ARTIFACTORY_USER
   CI_ARTIFACTORY_PASSWORD: $CI_ARTIFACTORY_PASSWORD
 
+include:
+  # Указываем основной пайплайн
+  - local: '/devops/terraform/vm/.gitlab-ci.yml' 
+
 stages:
   - prepare-cloud-config
   - plan  # Расширяем стадию plan из основного пайплайна
@@ -43,7 +47,7 @@ EOF
 
 # Расширяем стадию plan
 plan:
-  extends: .plan_Env_InfraDev  # Это задача из основного пайплайна
+  extends: .plan_Env_InfraDev  # задача из основного пайплайна
   stage: plan
   script:
     - echo "Выполняется кастомное планирование для PostgreSQL..."
@@ -63,14 +67,14 @@ plan:
       - tfplan
 
 apply:
-  extends: .apply_Env_InfraDev
+  extends: .apply_Env_InfraDev # аналогично задача из основного пайплайна
   stage: apply
   script:
     - echo "Применение изменений для PostgreSQL..."
     - terraform apply -auto-approve tfplan
   dependencies:
     - plan
-  when: manual  # Требуется ручное подтверждение
+  when: never 
 
 # Очистка артефактов после выполнения этапов
 cleanup:
