@@ -4,8 +4,7 @@ variables:
   CI_ARTIFACTORY_PASSWORD: $CI_ARTIFACTORY_PASSWORD
 
 include:
-  # Указываем основной пайплайн
-  - local: '/devops/terraform/vm/.gitlab-ci.yml'
+  - local: '/devops/terraform/vm/.gitlab-ci.yml'  # Указываем основной пайплайн
 
 stages:
   - prepare-cloud-config
