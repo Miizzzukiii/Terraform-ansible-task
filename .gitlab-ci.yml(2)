@@ -45,6 +45,8 @@ EOF
     expose_as: "Custom Cloud-Config"
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
+    - changes:
+        - '/devops/terraform/vm/VM_postgresql.tf'
 
 # Расширяем стадию plan
 plan:
@@ -68,6 +70,8 @@ plan:
       - tfplan
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
+    - changes:
+        - '/devops/terraform/vm/VM_postgresql.tf'
 
 apply:
   extends: .apply_Env_InfraDev  # аналогично задача из основного пайплайна
@@ -80,6 +84,8 @@ apply:
   when: never
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
+    - changes:
+        - '/devops/terraform/vm/VM_postgresql.tf'
 
 # Очистка артефактов после выполнения этапов
 cleanup:
@@ -91,4 +97,5 @@ cleanup:
   allow_failure: true  # Этот этап не влияет на пайплайн, если возникнут ошибки во время очистки
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
-
+    - changes:
+        - '/devops/terraform/vm/VM_postgresql.tf'
