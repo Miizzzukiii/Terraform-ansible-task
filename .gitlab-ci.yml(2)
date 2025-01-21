@@ -1,0 +1,83 @@
+variables:
+  variables:
+  CI_ARTIFACTORY_URL_CLOUD: $CI_ARTIFACTORY_URL_CLOUD
+  CI_ARTIFACTORY_USER: $CI_ARTIFACTORY_USER
+  CI_ARTIFACTORY_PASSWORD: $CI_ARTIFACTORY_PASSWORD
+
+stages:
+  - prepare-cloud-config
+  - plan  # Расширяем стадию plan из основного пайплайна
+  - apply  # Расширяем apply из основного пайплайна
+  - cleanup
+
+# Генерация кастомного Cloud-Init
+prepare-cloud-config:
+  stage: prepare-cloud-config
+  script:
+    - echo "Генерация кастомного cloud-config"
+    - export CUSTOM_CLOUD_CONFIG=$(cat <<EOF
+#cloud-config
+preserve_hostname: true
+timezone: Europe/Moscow
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+packages:
+  - git
+  - python3-pip
+  - python3
+  - ansible
+users:
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: false
+EOF
+    )
+    - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
+    - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
+  artifacts:
+    paths:
+      - cloud-config-preview.yml
+    expose_as: "Custom Cloud-Config"
+
+# Расширяем стадию plan
+plan:
+  extends: .plan_Env_InfraDev  # Это задача из основного пайплайна
+  stage: plan
+  script:
+    - echo "Выполняется кастомное планирование для PostgreSQL..."
+    - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
+    # Проверка условий:
+    - export DESTROY_COUNT=$(grep -c "Destroying" plan_output.log)
+    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ to add|change" plan_output.log | awk '{print $2}')
+    - echo "Ресурсов на удаление: $DESTROY_COUNT"
+    - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
+    - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
+    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
+  dependencies:
+    - prepare-cloud-config
+  artifacts:
+    paths:
+      - plan_output.log
+      - tfplan
+
+apply:
+  extends: .apply_Env_InfraDev
+  stage: apply
+  script:
+    - echo "Применение изменений для PostgreSQL..."
+    - terraform apply -auto-approve tfplan
+  dependencies:
+    - plan
+  when: manual  # Требуется ручное подтверждение
+
+# Очистка артефактов после выполнения этапов
+cleanup:
+  stage: cleanup
+  script:
+    - echo "Очистка артефактов..."
+    - rm -f tfplan cloud-config-preview.yml plan_output.log
+  when: always  # Этот этап всегда выполняется, даже если план или apply завершаются с ошибкой
+  allow_failure: true  # Этот этап не влияет на пайплайн, если возникнут ошибки во время очистки
