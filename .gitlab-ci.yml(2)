@@ -7,8 +7,7 @@ include:
   - project: 'devops/ci-cd/deploy'
     ref: develop
     file: '/.gitlab-ci.yml'
-  - project: 'devops/terraform/vm' 
-    ref: develop
+  - project: 'devops/terraform/vm' #тут нет ветки develop
     file: '/.gitlab-ci.yml'
 
 stages:
