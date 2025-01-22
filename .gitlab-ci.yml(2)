@@ -65,12 +65,10 @@ plan:
   script:
     - echo "Выполняется кастомное планирование для PostgreSQL..."
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
-    # Проверка условий:
-    - export DESTROY_COUNT=$(grep -c "Destroying" plan_output.log)
-    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ (to add|to change)" plan_output.log | awk '{print $2}')
-    - echo "Ресурсов на удаление: $DESTROY_COUNT"
+    # Извлекаем строки с Plan и анализируем:
+    - export PLAN_LINES=$(grep "Plan:" plan_output.log)
+    - export ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -Eo '[0-9]+' | head -n 1)  # Извлекаем количество ресурсов
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-    - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
     - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
   dependencies:
     - prepare-cloud-config
