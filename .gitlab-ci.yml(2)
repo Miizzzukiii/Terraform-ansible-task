@@ -93,7 +93,11 @@ plan:
     - echo "$PLAN_LINES" > extracted_plan.log
     - ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -oP '\d+' | head -n 1 || echo 0)
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!" && exit 1; fi
+    - >
+      if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then
+        echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!";
+        exit 1;
+      fi
   dependencies:
     - prepare-cloud-config
   artifacts:
