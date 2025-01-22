@@ -1,16 +1,28 @@
 variables:
-  CI_ARTIFACTORY_URL_CLOUD: $CI_ARTIFACTORY_URL_CLOUD
-  CI_ARTIFACTORY_USER: $CI_ARTIFACTORY_USER
-  CI_ARTIFACTORY_PASSWORD: $CI_ARTIFACTORY_PASSWORD
+  CI_ARTIFACTORY_URL_CLOUD: "$CI_ARTIFACTORY_URL_CLOUD"
+  CI_ARTIFACTORY_USER: "$CI_ARTIFACTORY_USER"
+  CI_ARTIFACTORY_PASSWORD: "$CI_ARTIFACTORY_PASSWORD"
 
 include:
-  - local: '/devops/terraform/vm/.gitlab-ci.yml'  # Указываем основной пайплайн
+  - project: '$CI_PROJECT_NAMESPACE/develop'
+    file: '/.gitlab-ci.yml'
+  - project: 'devops/terraform'  # структура нейспейс/проект
+    file: 'vm/.gitlab-ci.yml'
 
 stages:
+  - self-trigger
   - prepare-cloud-config
   - plan  # Расширяем стадию plan из основного пайплайна
   - apply  # Расширяем apply из основного пайплайна
   - cleanup
+
+self-trigger:
+  stage: self-trigger
+  trigger:
+    strategy: depend  
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      when: always
 
 # Генерация кастомного Cloud-Init
 prepare-cloud-config:
@@ -45,8 +57,6 @@ EOF
     expose_as: "Custom Cloud-Config"
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
-    - changes:
-        - '/devops/terraform/vm/VM_postgresql.tf'
 
 # Расширяем стадию plan
 plan:
