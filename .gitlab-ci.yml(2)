@@ -4,10 +4,12 @@ variables:
   CI_ARTIFACTORY_PASSWORD: "$CI_ARTIFACTORY_PASSWORD"
 
 include:
-  - project: '$CI_PROJECT_NAMESPACE/develop'
+  - project: 'devops/ci-cd/deploy'
+    ref: develop
     file: '/.gitlab-ci.yml'
-  - project: 'devops/terraform' # структура нейспейс/проект
-    file: 'vm/.gitlab-ci.yml'
+  - project: 'devops/terraform/vm' 
+    ref: develop
+    file: '/.gitlab-ci.yml'
 
 stages:
   - self-trigger
