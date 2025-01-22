@@ -1,44 +1,72 @@
 variables:
-  CI_ARTIFACTORY_URL_CLOUD: $CI_ARTIFACTORY_URL_CLOUD
-  CI_ARTIFACTORY_USER: $CI_ARTIFACTORY_USER
-  CI_ARTIFACTORY_PASSWORD: $CI_ARTIFACTORY_PASSWORD
-  
+  CI_ARTIFACTORY_URL_CLOUD: "$CI_ARTIFACTORY_URL_CLOUD"
+  CI_ARTIFACTORY_USER: "$CI_ARTIFACTORY_USER"
+  CI_ARTIFACTORY_PASSWORD: "$CI_ARTIFACTORY_PASSWORD"
+
+include:
+  - project: 'devops/ci-cd/deploy'
+    ref: develop
+    file: '/.gitlab-ci.yml'
+  - project: 'devops/terraform/vm' #тут нет ветки develop
+    file: '/.gitlab-ci.yml'
+
 stages:
+  - self-trigger
   - prepare-cloud-config
-  - plan
-  - apply
+  - init # Расширяем стадию init из основного пайплайна
+  - plan  # Расширяем стадию plan из основного пайплайна
+  - apply  # Расширяем apply из основного пайплайна
   - cleanup
 
-# Генерация кастомного Cloud-Init конфигурационного файла
+self-trigger:
+  stage: self-trigger
+  trigger: 
+    project: 'devops/ci-cd/deploy'
+    strategy: depend  
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      when: always
+
+# Генерация кастомного Cloud-Init
 prepare-cloud-config:
   stage: prepare-cloud-config
   script:
     - echo "Генерация кастомного cloud-config"
-    - export CUSTOM_CLOUD_CONFIG=$(cat <<EOF
-#cloud-config
-preserve_hostname: true
-timezone: Europe/Moscow
-package_update: true
-package_upgrade: true
-package_reboot_if_required: true
-packages:
-  - git
-  - python3-pip
-  - python3
-  - ansible
-users:
-  - name: ubuntu
-    groups: sudo
-    shell: /bin/bash
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-    lock_passwd: false
-EOF
-    )
-    # Передаём cloud-config в качестве переменной Terraform
-    - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
+    - |
+      export CUSTOM_CLOUD_CONFIG="
+      #cloud-config
+      preserve_hostname: true
+      timezone: Europe/Moscow
+      package_update: true
+      package_upgrade: true
+      package_reboot_if_required: true
+      packages:
+        - git
+        - python3-pip
+        - python3
+        - ansible
+      users:
+        - name: ubuntu
+          groups: sudo
+          shell: /bin/bash
+          sudo: ['ALL=(ALL) NOPASSWD:ALL']
+          lock_passwd: false
+      "
     - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
+    - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
+  artifacts:
+    paths:
+      - cloud-config-preview.yml
+    expose_as: "Custom Cloud-Config"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
 
-    # Инициализация Terraform с конфигурацией для использования backend
+# Расширяем стадию init
+init:
+  extends: .template_before_script
+  stage: init
+  script:
+  # Инициализация Terraform с конфигурацией для использования backend
     - export GITLAB_ACCESS_TOKEN=<YOUR-ACCESS-TOKEN>
     - terraform init \
         -backend-config="address=https://gitlab.exportcenter.ru/api/v4/projects/651/terraform/state/Env_Bastion_Dev_tfstate" \
@@ -49,43 +77,41 @@ EOF
         -backend-config="lock_method=POST" \
         -backend-config="unlock_method=DELETE" \
         -backend-config="retry_wait_min=5"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      changes:
+        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
         
-  artifacts:
-    paths:
-      - cloud-config-preview.yml  # Для отладки сохраняем сгенерированный файл
-
-# Проверка изменений с учетом условий
+# Расширяем стадию plan
 plan:
+  extends: .template_plan
   stage: plan
   script:
-    - echo "Планирование изменений Terraform..."
-    # Выполняем terraform plan с передачей кастомного cloud-config
+    - echo "Выполняется кастомное планирование для PostgreSQL..."
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
-
-    # Анализируем план для проверки количества изменений и наличия удалений
-    - export DESTROY_COUNT=$(grep -c "Destroying" plan_output.log)
-    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ to add|change" plan_output.log | awk '{print $2}')
-    - echo "Ресурсов на удаление: $DESTROY_COUNT"
+    - export PLAN_LINES=$(grep "Plan:" plan_output.log)
+    - export ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -Eo '[0-9]+' | head -n 1)
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-
-    # Условие: отменяем, если есть удаления или слишком много изменений
-    - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
     - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
-
+  dependencies:
+    - prepare-cloud-config
   artifacts:
     paths:
-      - tfplan       # Сохраняем план для использования в следующем этапе
-      - plan_output.log  # Лог плана для отладки
-  when: manual  # Требует ручного подтверждения
-  allow_failure: false
-  
-# Применение изменений, если они были одобрены
+      - plan_output.log
+      - tfplan
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      changes:
+        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
+
 apply:
+  extends: .template_apply  # аналогично задача из основного пайплайна
   stage: apply
   script:
-    - echo "Применение изменений Terraform..."
-    - terraform apply -auto-approve tfplan
-  when: manual  # Ручное подтверждение, если план прошел !!!!!!!
+    - echo "Применение изменений для PostgreSQL..."
+  dependencies:
+    - plan
+  when: manual
 
 # Очистка артефактов после выполнения этапов
 cleanup:
@@ -95,6 +121,10 @@ cleanup:
     - rm -f tfplan cloud-config-preview.yml plan_output.log
   when: always  # Этот этап всегда выполняется, даже если план или apply завершаются с ошибкой
   allow_failure: true  # Этот этап не влияет на пайплайн, если возникнут ошибки во время очистки
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+    - changes:
+      - '/devops/terraform/vm/VM_postgresql.tf'
 
 
 
