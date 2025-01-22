@@ -64,14 +64,13 @@ prepare-cloud-config:
 
 # Расширяем стадию plan
 plan:
-  extends: .template_plan  # задача из основного пайплайна
+  extends: .template_plan
   stage: plan
   script:
     - echo "Выполняется кастомное планирование для PostgreSQL..."
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
-    # Извлекаем строки с Plan и анализируем:
     - export PLAN_LINES=$(grep "Plan:" plan_output.log)
-    - export ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -Eo '[0-9]+' | head -n 1)  # Извлекаем количество ресурсов
+    - export ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -Eo '[0-9]+' | head -n 1)
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
     - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
   dependencies:
@@ -82,8 +81,8 @@ plan:
       - tfplan
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
-    - changes:
-      - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
+      changes:
+        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
 
 apply:
   extends: .template_apply  # аналогично задача из основного пайплайна
