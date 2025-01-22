@@ -89,7 +89,6 @@ apply:
   stage: apply
   script:
     - echo "Применение изменений для PostgreSQL..."
-    - terraform apply -auto-approve tfplan
   dependencies:
     - plan
   when: manual
