@@ -6,7 +6,7 @@ variables:
 include:
   - project: '$CI_PROJECT_NAMESPACE/develop'
     file: '/.gitlab-ci.yml'
-  - project: 'devops/terraform'  # структура нейспейс/проект
+  - project: 'devops/terraform' # структура нейспейс/проект
     file: 'vm/.gitlab-ci.yml'
 
 stages:
@@ -24,11 +24,13 @@ self-trigger:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
       when: always
 
+# Генерация кастомного Cloud-Init
 prepare-cloud-config:
   stage: prepare-cloud-config
   script:
     - echo "Генерация кастомного cloud-config"
-    - export CUSTOM_CLOUD_CONFIG=$(cat <<-EOF
+    - |
+      export CUSTOM_CLOUD_CONFIG="
       #cloud-config
       preserve_hostname: true
       timezone: Europe/Moscow
@@ -46,8 +48,7 @@ prepare-cloud-config:
           shell: /bin/bash
           sudo: ['ALL=(ALL) NOPASSWD:ALL']
           lock_passwd: false
-      EOF
-    )
+      "
     - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
     - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
   artifacts:
@@ -80,7 +81,7 @@ plan:
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
     - changes:
-        - '/devops/terraform/vm/VM_postgresql.tf'
+      - '/devops/terraform/vm/VM_postgresql.tf'
 
 apply:
   extends: .apply_Env_InfraDev  # аналогично задача из основного пайплайна
@@ -94,7 +95,7 @@ apply:
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
     - changes:
-        - '/devops/terraform/vm/VM_postgresql.tf'
+      - '/devops/terraform/vm/VM_postgresql.tf'
 
 # Очистка артефактов после выполнения этапов
 cleanup:
@@ -107,4 +108,4 @@ cleanup:
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
     - changes:
-        - '/devops/terraform/vm/VM_postgresql.tf'
+      - '/devops/terraform/vm/VM_postgresql.tf'
