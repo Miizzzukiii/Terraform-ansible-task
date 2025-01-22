@@ -13,6 +13,7 @@ include:
 stages:
   - self-trigger
   - prepare-cloud-config
+  - init # Расширяем стадию init из основного пайплайна
   - plan  # Расширяем стадию plan из основного пайплайна
   - apply  # Расширяем apply из основного пайплайна
   - cleanup
@@ -24,8 +25,6 @@ self-trigger:
     strategy: depend  
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
-      changes:
-        - "/devops/terraform/vm/VM_postgresql.tf"
       when: always
 
 # Генерация кастомного Cloud-Init
@@ -62,20 +61,48 @@ prepare-cloud-config:
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
 
+# Расширяем стадию init
+init:
+  extends: .template_before_script
+  stage: init
+  script:
+  # Инициализация Terraform с конфигурацией для использования backend
+    - export GITLAB_ACCESS_TOKEN=<YOUR-ACCESS-TOKEN>
+    - terraform init \
+        -backend-config="address=https://gitlab.exportcenter.ru/api/v4/projects/651/terraform/state/Env_Bastion_Dev_tfstate" \
+        -backend-config="lock_address=https://gitlab.exportcenter.ru/api/v4/projects/651/terraform/state/Env_Bastion_Dev_tfstate/lock" \
+        -backend-config="unlock_address=https://gitlab.exportcenter.ru/api/v4/projects/651/terraform/state/Env_Bastion_Dev_tfstate/lock" \
+        -backend-config="username=mrudneva" \
+        -backend-config="password=$GITLAB_ACCESS_TOKEN" \
+        -backend-config="lock_method=POST" \
+        -backend-config="unlock_method=DELETE" \
+        -backend-config="retry_wait_min=5"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      changes:
+        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
+        
 # Расширяем стадию plan
 plan:
+  extends: .template_plan
   stage: plan
   script:
-    - echo "Выполняется планирование Terraform..."
+    - echo "Выполняется кастомное планирование для PostgreSQL..."
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
-    - PLAN_LINES=$(grep "Plan:" plan_output.log || echo "Plan: 0 to add, 0 to change, 0 to destroy")
-    - echo "$PLAN_LINES" > extracted_plan.log
-    - ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -oP '\d+' | head -n 1 || echo 0)
+    - export PLAN_LINES=$(grep "Plan:" plan_output.log)
+    - export ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -Eo '[0-9]+' | head -n 1)
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then
-        echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!";
-        exit 1;
-      fi
+    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
+  dependencies:
+    - prepare-cloud-config
+  artifacts:
+    paths:
+      - plan_output.log
+      - tfplan
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
+      changes:
+        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
 
 apply:
   extends: .template_apply  # аналогично задача из основного пайплайна
