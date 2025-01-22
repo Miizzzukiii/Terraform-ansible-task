@@ -24,30 +24,29 @@ self-trigger:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
       when: always
 
-# Генерация кастомного Cloud-Init
 prepare-cloud-config:
   stage: prepare-cloud-config
   script:
     - echo "Генерация кастомного cloud-config"
-    - export CUSTOM_CLOUD_CONFIG=$(cat <<EOF
-#cloud-config
-preserve_hostname: true
-timezone: Europe/Moscow
-package_update: true
-package_upgrade: true
-package_reboot_if_required: true
-packages:
-  - git
-  - python3-pip
-  - python3
-  - ansible
-users:
-  - name: ubuntu
-    groups: sudo
-    shell: /bin/bash
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-    lock_passwd: false
-EOF
+    - export CUSTOM_CLOUD_CONFIG=$(cat <<-EOF
+      #cloud-config
+      preserve_hostname: true
+      timezone: Europe/Moscow
+      package_update: true
+      package_upgrade: true
+      package_reboot_if_required: true
+      packages:
+        - git
+        - python3-pip
+        - python3
+        - ansible
+      users:
+        - name: ubuntu
+          groups: sudo
+          shell: /bin/bash
+          sudo: ['ALL=(ALL) NOPASSWD:ALL']
+          lock_passwd: false
+      EOF
     )
     - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
     - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
