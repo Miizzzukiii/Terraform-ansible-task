@@ -70,8 +70,16 @@ plan:
     - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ to add|change" plan_output.log | awk '{print $2}')
     - echo "Ресурсов на удаление: $DESTROY_COUNT"
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-    - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
-    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"; exit 1; fi
+    - |
+      if [[ "$DESTROY_COUNT" -gt 0 ]]; then 
+        echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"
+        exit 1
+      fi
+    - |
+      if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then 
+        echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!"
+        exit 1
+      fi
   dependencies:
     - prepare-cloud-config
   artifacts:
@@ -82,7 +90,6 @@ plan:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
     - changes:
       - '/devops/terraform/vm/VM_postgresql.tf'
-
 apply:
   extends: .apply_Env_InfraDev  # аналогично задача из основного пайплайна
   stage: apply
