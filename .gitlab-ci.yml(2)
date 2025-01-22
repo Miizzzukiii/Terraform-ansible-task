@@ -67,7 +67,7 @@ plan:
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
     # Проверка условий:
     - export DESTROY_COUNT=$(grep -c "Destroying" plan_output.log)
-    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ to add|change" plan_output.log | awk '{print $2}')
+    - export ADD_OR_CHANGE_COUNT=$(grep -E "Plan: [0-9]+ (to add|to change)" plan_output.log | awk '{print $2}')
     - echo "Ресурсов на удаление: $DESTROY_COUNT"
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
     - if [[ "$DESTROY_COUNT" -gt 0 ]]; then echo "Ошибка: план включает удаление ресурсов. Требуется подтверждение!"; exit 1; fi
@@ -82,6 +82,7 @@ plan:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
     - changes:
       - '/devops/terraform/vm/VM_postgresql.tf'
+
 apply:
   extends: .apply_Env_InfraDev  # аналогично задача из основного пайплайна
   stage: apply
