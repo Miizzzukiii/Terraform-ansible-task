@@ -19,7 +19,8 @@ stages:
 
 self-trigger:
   stage: self-trigger
-  trigger:
+  trigger: 
+    project: 'devops/ci-cd/deploy'
     strategy: depend  
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'
@@ -92,11 +93,7 @@ apply:
     - terraform apply -auto-approve tfplan
   dependencies:
     - plan
-  when: never
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == "develop"'
-    - changes:
-      - '/devops/terraform/vm/VM_postgresql.tf'
+  when: manual
 
 # Очистка артефактов после выполнения этапов
 cleanup:
