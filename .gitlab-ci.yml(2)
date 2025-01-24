@@ -55,9 +55,7 @@ prepare-cloud-config:
     paths:
       - cloud-config-preview.yml
     expose_as: "Custom Cloud-Config"
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == "develop"'
-
+  
 # Расширяем стадию init
 init:
   extends: .template_before_script
