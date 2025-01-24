@@ -84,17 +84,18 @@ init:
         
 # Расширяем стадию plan
 plan:
-  extends: .template_plan
   stage: plan
   script:
     - echo "Выполняется планирование Terraform..."
     - terraform plan -var="cloud_config=$TF_VAR_cloud_config" -out=tfplan > plan_output.log
+    # Извлекаем строку с планом
     - PLAN_LINES=$(grep "Plan:" plan_output.log || echo "Plan: 0 to add, 0 to change, 0 to destroy")
     - echo "$PLAN_LINES" > extracted_plan.log
+    # Извлекаем числовые значения из строки с планом
     - ADD_OR_CHANGE_COUNT=$(echo "$PLAN_LINES" | grep -oP '\d+' | head -n 1 || echo 0)
     - echo "Ресурсов на добавление/изменение: $ADD_OR_CHANGE_COUNT"
-    - >
-      if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then
+    # Проверяем лимит изменений
+    - if [[ "$ADD_OR_CHANGE_COUNT" -gt 4 ]]; then
         echo "Ошибка: слишком много ресурсов изменяется. Требуется подтверждение!";
         exit 1;
       fi
