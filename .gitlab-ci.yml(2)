@@ -18,11 +18,13 @@ stages:
 self-trigger:
   stage: self-trigger
   trigger: 
-    project: 'devops/terraform/vm'
+    project: 'devops/ci-cd/deploy'
     strategy: depend  
   rules:
-    - changes:
-        - '/devops/terraform/vm/Env_InfraDev/VM_postgresql.tf'
+    - if: '$CI_COMMIT_REF_NAME == "develop"'  
+      changes:
+        - '/devops/ci-cd/deploy/terraform/.gitlab-ci.yml'  
+      when: always
 
 # Генерация кастомного Cloud-Init
 prepare-cloud-config:
