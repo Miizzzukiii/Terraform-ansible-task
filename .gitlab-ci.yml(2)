@@ -1,11 +1,22 @@
+image: $CI_ARTIFACTORY_URL_CLOUD_BASE/docker:18.09_vault_2
+
+services:
+  - $CI_ARTIFACTORY_URL_CLOUD_BASE/docker:18.09-dind
+
 variables:
+  DOCKER_DRIVER: overlay2
+  IS_HF: "false"
+  DEPLOY_NEW: "false"
+  VAULT_SERVER_URL: http://10.4.1.88:8200
+  VAULT_AUTH_PATH: jwt
   CI_ARTIFACTORY_URL_CLOUD: "$CI_ARTIFACTORY_URL_CLOUD"
   CI_ARTIFACTORY_USER: "$CI_ARTIFACTORY_USER"
   CI_ARTIFACTORY_PASSWORD: "$CI_ARTIFACTORY_PASSWORD"
 
 include:
-  - project: 'devops/terraform/vm' #тут нет ветки develop
-    file: '/.gitlab-ci.yml'
+  project: 'devops/terraform/vm' #тут нет ветки develop
+  ref: master
+  file: '/.gitlab-ci.yml'
 
 stages:
   - self-trigger
@@ -19,7 +30,6 @@ self-trigger:
   stage: self-trigger
   trigger: 
     project: 'devops/ci-cd/deploy'
-    strategy: depend  
   rules:
     - if: '$CI_COMMIT_REF_NAME == "develop"'  
       changes:
