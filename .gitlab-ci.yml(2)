@@ -62,6 +62,7 @@ prepare-cloud-config:
           lock_passwd: false
       "
     - echo "$CUSTOM_CLOUD_CONFIG" > cloud-config-preview.yml
+    - cat cloud-config-preview.yml  # Проверка содержимого файла
     - export TF_VAR_cloud_config="$CUSTOM_CLOUD_CONFIG"
   artifacts:
     paths:
